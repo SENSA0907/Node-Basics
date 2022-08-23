@@ -1,6 +1,8 @@
 const express = require("express");
 const MOCK_DATA = require("../mock");
-const { validateAddProduct } = require('../Validation/productValidation');
+const { validateAddProduct } = require("../Validation/productValidation");
+const { getDB } = require("../DB/database");
+const mongodb = require('mongodb');
 
 const data = MOCK_DATA.products;
 
@@ -21,9 +23,18 @@ const getProducts = (req, res) => {
 const postProduct = (req, res) => {
   // console.log(req.body);
   data.push({ ...req.body, id: data.length + 1 });
-  res.status(201).json({
-    data: req.body,
-  });
+  const db = getDB();
+  db.collection("product")
+    .insertOne({ ...req.body, id: data.length + 1 })
+    .then((success) => {
+      console.log(success);
+      console.log(mongodb.ObjectId(success.insertedId))
+      res.status(201).json({
+        ...success,
+        data: req.body,
+      });
+    });
+  
 };
 
 const deleteProduct = (req, res) => {
