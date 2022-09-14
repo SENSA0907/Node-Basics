@@ -34,7 +34,7 @@ run().catch(console.dir); */
 connectMongoDB();
 
 const productRouter = require("./Router/ProductRouter");
-
+const productRouterNew = require("./Router/ProductRouterNew");
 const PORT = process.env.NODE_ENV.trim() === "prod" ? 5000 : 3001;
 // const PROD_PORT = 5000;
 
@@ -56,7 +56,7 @@ const customMiddleware = (req, res, next) => {
   next();
 };
 // 1st middle
-app.use(customMiddleware);
+// app.use(customMiddleware);
 // 2nd middle ware
 app.use(express.json());
 // 3rd middleware
@@ -78,6 +78,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use("/api/v1/products", productRouter);
+app.use('/api/v2/products', productRouterNew);
 
 // app.use('/api/v1/users', userRouter)
 
