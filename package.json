@@ -23,7 +23,7 @@
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "mongodb": "^4.9.0",
-    "mongoose": "^6.6.0",
+    "mongoose": "^6.6.1",
     "morgan": "^1.10.0",
     "response-time": "^2.3.2"
   },

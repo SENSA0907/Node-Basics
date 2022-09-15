@@ -5,7 +5,8 @@ const productSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: [true, "Price is mandatory"],
-    min: [100, "Minimum value would be 100 for price"],
+    min: [1, "Minimum value would be 100 for price"],
+    default: 1
   },
   isAvailable: {
     type: Boolean,
@@ -25,11 +26,14 @@ const productSchema = new mongoose.Schema({
       message: (props) => `${props.value} is not a valid phone number!`,
     },
     required: [true, "User phone number required"],
+    default: "111-111-1111"
   },
   name: {
     first: {
       type: String,
+      trim: true, // only available for String
       required: [true, "First name is mandatory"],
+      default: "first"
     },
     last: {
       type: String,
