@@ -34,10 +34,28 @@ const postProductS = (req, res) => {
 
 const getProducts = (req, res) => {
   console.log(req.query, req.params);
+  const excludeQuery = ['sort', 'select'];
+
+  const queryCopy = { ...req.query };
+  excludeQuery.forEach((e)=>{
+    delete queryCopy[e]
+  });
+  console.log(queryCopy);
+
+  const sortQuery = req.query.sort ? req.query.sort.split(',').join(' ') : '';
+  const selectQuery = req.query.select ? req.query.select.split(',').join(' ') : '';
+
+  // Sorting - based on some filed, i need to do asc or des the results
+  // Field select - Selecting particular fields
+  // pagination - 1000s of daa, then pagination helps in getting limited data
+  // Advance Filtering -- 
   ProductModel.find({
-    ...req.query
-  }).then((success)=>{
-    console.log(success)
+    queryCopy,
+    price: {
+      $gt: 20
+    }
+  }).sort(sortQuery).select(selectQuery).then((success)=>{
+    // console.log(success)
     res.send({ data: success})
   }).catch((err)=>{
     res.status(400).send(err)

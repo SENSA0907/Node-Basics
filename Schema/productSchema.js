@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     required: [true, "isAvailable field is required"],
     default: true,
+    select: false // restrict fields in schema also
   },
   id: {
     type: Number,
