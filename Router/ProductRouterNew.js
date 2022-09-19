@@ -34,27 +34,32 @@ const postProductS = (req, res) => {
 
 const getProducts = (req, res) => {
   console.log(req.query, req.params);
-  const excludeQuery = ['sort', 'select'];
+  const excludeQuery = ['sort', 'select', 'title', 'limit'];
 
   const queryCopy = { ...req.query };
   excludeQuery.forEach((e)=>{
     delete queryCopy[e]
   });
-  console.log(queryCopy);
+  
 
+  let queryCopyString = JSON.stringify(queryCopy); //object to string
+
+  queryCopyString = queryCopyString.replace(/\b(gt|gte|lt|lte|regex)\b/g, (matchedString)=> `$${matchedString}`)
   const sortQuery = req.query.sort ? req.query.sort.split(',').join(' ') : '';
   const selectQuery = req.query.select ? req.query.select.split(',').join(' ') : '';
-
+  const titleSearchPattern = new RegExp(req.query.title, 'i'); // i here stands for ignore case
+  console.log(titleSearchPattern);
+  
   // Sorting - based on some filed, i need to do asc or des the results
   // Field select - Selecting particular fields
   // pagination - 1000s of daa, then pagination helps in getting limited data
   // Advance Filtering -- 
   ProductModel.find({
-    queryCopy,
-    price: {
-      $gt: 20
+    ...JSON.parse(queryCopyString),
+    title: {
+      '$regex': titleSearchPattern // search based filter
     }
-  }).sort(sortQuery).select(selectQuery).then((success)=>{
+  }).sort(sortQuery).select(selectQuery).limit(req.query.limit || 5).then((success)=>{
     // console.log(success)
     res.send({ data: success})
   }).catch((err)=>{
