@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema({
   title: String,
+  titleSlug: String,
   price: {
     type: Number,
     required: [true, "Price is mandatory"],
@@ -12,11 +13,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     required: [true, "isAvailable field is required"],
     default: true,
-    select: false // restrict fields in schema also
+    select: true // restrict fields in schema also
   },
   id: {
     type: Number,
-    unique: [true, "id should be unique, try with different id"],
   },
   phone: {
     type: String,
@@ -42,6 +42,58 @@ const productSchema = new mongoose.Schema({
     },
   },
   images: [String]
+}, {
+  toJSON: { virtuals: true }, // during document creation, we pass json format, so to get virtual property in json i added this line
+  toObject: { virtuals: true } // when doc created, it will return us the object, so to inculude virtual property i added this
 });
+
+// save will work for both .create and .save mongoose methods
+// this pre method is a document middleware and receives next as the function
+// we need to use normal function as the second parameter
+// don't use arrow function
+productSchema.pre('save', function (next) {
+  // this keyword here, refers to the corrent document we are passing
+  // arrow function, do not have its own this keyword, 
+  // that's why i used normal function
+  // normal function always has access to the this keyword in javascript
+  // console.log(this);
+  this.titleSlug = this.title.replace(/ /g, '-');
+  next();
+})
+
+// post save
+productSchema.post('save', function (doc, next) {
+  console.log(doc);
+  next();
+})
+
+// QUERY middleware
+productSchema.pre(/^find/, function(next) {
+  this.startTime = Date.now();
+  this.find({
+    isAvailable: false
+  })
+  console.log(this)
+  next()
+})
+
+
+productSchema.post(/^find/, function(query, next) {
+  const timeTaken = Date.now() - this.startTime;
+  console.log('Time taken to execure query is ', timeTaken);
+  next()
+})
+
+
+// Virtual Properties
+// something which we cannot query but will present in the document
+// date-of-birth --> age and need to store in document
+// but user cannot do query operation based on age
+// 1 january, 2 feb
+// 0 sunday, 1 saturday
+
+productSchema.virtual('priceInDollar').get(function(){
+  return this.price / 80;
+})
 
 module.exports = productSchema;

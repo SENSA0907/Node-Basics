@@ -1,7 +1,8 @@
 const express = require("express");
 const MOCK_DATA = require("../mock");
 const mongoose = require('mongoose');
-const productSchema = require('../Schema/productSchema')
+const productSchema = require('../Schema/productSchema');
+const MAX_LIMIT = 5;
 
 const uri = process.env.DB_URL.replace("<PASSWORD>", process.env.DB_PASSWORD);
 mongoose.connect(uri);
@@ -34,7 +35,17 @@ const postProductS = (req, res) => {
 
 const getProducts = (req, res) => {
   console.log(req.query, req.params);
-  const excludeQuery = ['sort', 'select', 'title', 'limit'];
+  const excludeQuery = ['sort', 'select', 'title', 'limit', 'page'];
+
+  const page = req.query.page * 1 || 1;
+  const limit = req.query.limit * 1 || MAX_LIMIT;
+
+  // for page 1, we need to get dcoument between 1 and 5 --> skip is o
+  // for page 2, we need document between 6 and 10 --> skip is 5
+
+  const skip = (page - 1) * limit;
+
+  console.log(page, limit);
 
   const queryCopy = { ...req.query };
   excludeQuery.forEach((e)=>{
@@ -45,24 +56,23 @@ const getProducts = (req, res) => {
   let queryCopyString = JSON.stringify(queryCopy); //object to string
 
   queryCopyString = queryCopyString.replace(/\b(gt|gte|lt|lte|regex)\b/g, (matchedString)=> `$${matchedString}`)
-  const sortQuery = req.query.sort ? req.query.sort.split(',').join(' ') : '';
-  const selectQuery = req.query.select ? req.query.select.split(',').join(' ') : '';
-  const titleSearchPattern = new RegExp(req.query.title, 'i'); // i here stands for ignore case
-  console.log(titleSearchPattern);
+  const sortQuery = req.query.sort ? req.query.sort.split(',').join(' ') : 'price';
+  const selectQuery = req.query.select ? req.query.select.split(',').join(' ') : '-id';
+  /* const titleSearchPattern = new RegExp(req.query.title || "", 'i'); // i here stands for ignore case
+  console.log(titleSearchPattern); */
   
   // Sorting - based on some filed, i need to do asc or des the results
   // Field select - Selecting particular fields
   // pagination - 1000s of daa, then pagination helps in getting limited data
   // Advance Filtering -- 
+  console.log(queryCopyString)
   ProductModel.find({
     ...JSON.parse(queryCopyString),
-    title: {
-      '$regex': titleSearchPattern // search based filter
-    }
-  }).sort(sortQuery).select(selectQuery).limit(req.query.limit || 5).then((success)=>{
+  }).sort(sortQuery).select(selectQuery).limit(limit).skip(skip).then((success)=>{
     // console.log(success)
-    res.send({ data: success})
+    res.send({ data: success })
   }).catch((err)=>{
+    console.log(err)
     res.status(400).send(err)
   })
 };
@@ -72,6 +82,8 @@ const postProduct = (req, res) => {
   // The name of the model can br taken as collection name , if we won't provide in schema
 
   // create is used for adding an document into database collection
+  // pre middleware gets executed, before actual saving the document
+  // post middleware gets executed, after saving and before then statement gets executed
   ProductModel.create({
     ...req.body
   }).then((success)=>{
