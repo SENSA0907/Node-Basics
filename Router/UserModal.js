@@ -13,18 +13,29 @@ const createUser = async (req, res, next) => {
   // passing body directly -- security issue?
 
   try {
-    await UserModal.create({
+    const newUser = await UserModal.create({
       name: body.name,
       password: body.password,
       email: body.email,
-      confirmPassword: body.confirmPassword
+      confirmPassword: body.confirmPassword,
+    });
+    res.status(201).send({
+      status: "success",
+      data: {
+        user: newUser,
+      },
     });
   } catch (e) {
     console.log(e);
+    res.status(400).send({
+      status: "error",
+      data: {
+        error: e,
+      },
+    });
   }
 };
 
 userRouter.route("/addUser").post(createUser);
-
 
 module.exports = userRouter;
