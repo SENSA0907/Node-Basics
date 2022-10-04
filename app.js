@@ -35,6 +35,7 @@ connectMongoDB();
 
 const productRouter = require("./Router/ProductRouter");
 const productRouterNew = require("./Router/ProductRouterNew");
+const userRouter = require("./Router/UserModal");
 const PORT = process.env.NODE_ENV.trim() === "prod" ? 5000 : 3001;
 // const PROD_PORT = 5000;
 
@@ -79,6 +80,7 @@ app.use(limiter);
 
 app.use("/api/v1/products", productRouter);
 app.use('/api/v2/products', productRouterNew);
+app.use('/api/v2/users', userRouter);
 
 // app.use('/api/v1/users', userRouter)
 
