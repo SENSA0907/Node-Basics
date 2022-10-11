@@ -38,7 +38,7 @@ const createUser = async (req, res, next) => {
   }
 };
 
-const loginUser = async (req, res, next) => {
+const validatePasswrod = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -62,16 +62,10 @@ const loginUser = async (req, res, next) => {
     const passwordMatch = await bcrypt.compare(password, userData.password);
 
     if (passwordMatch) {
-        // do create jwt token and send to user
-        const tokem = await jwt.sign({
-            userId: userData._id
-        }, process.env.JWT_SECRET)
-
-        res.send({
-            status: "Success",
-            message: "User Authorized successfully",
-            tokem
-        })
+        // call the next middleware
+        // we can add any data into req object, Here i added user data into req object
+        req.user = userData;
+       next();
     } else {
         res.status(400).send({
             status: "Errpr",
@@ -80,14 +74,54 @@ const loginUser = async (req, res, next) => {
     }
 }
 
+const protectRoute = async (req, res, next) => {
+    const { authorization } = req.headers;
+    console.log(authorization);
+    const {userId} = await jwt.verify(authorization, process.env.JWT_SECRET);
+
+    // 1. Whether user is present or not
+    // We are now getting userId from token, so we need to check whether that user id is present of not
+    const userData = await UserModal.findById(userId);
+
+    if (!userData) {
+        res.status(404).send({
+            status: "error",
+            message: "user not found"
+        })
+    }
+
+    req.user = userData;
+
+    // created a token after login and passed that token in headers
+    // after i generated the token, i changed my password
+    // for token, i need to keep some expiration time
+    // also while changing password, i need to update time at which the passwor is changed
+    // then i need to validate that time with token creation time
+    // if token creation time is less that password reset time, token in invalid
+    next();
+}
+
+const loginUser = async (req, res, next) => {
+    const tokem = await jwt.sign({
+        userId: req.user._id
+    }, process.env.JWT_SECRET, { expiresIn: '1h' })
+
+    console.log(tokem)
+
+    res.send({
+        status: "Success",
+        message: "User Authorized successfully",
+        tokem
+    })
+}
+
 const updateUserName = async (req, res, next) => {
-    const { token, name} = req.body;
+    const { name} = req.body;
 
     
 
     try {
-        const {userId} = await jwt.verify(token, process.env.JWT_SECRET);
-        const updateUser = await UserModal.findByIdAndUpdate(userId, { name }, {
+        const updateUser = await UserModal.findByIdAndUpdate(req.user._id, { name }, {
             runValidators: true,
             new: true
         })
@@ -103,11 +137,16 @@ const updateUserName = async (req, res, next) => {
             message: "Something went worng, pls try again after sometime"
         })
     }
-    console.log(userId)
 }
 
+// Will public or protected one ?
+// addUser would be expected to be a public -- public route
 userRouter.route("/addUser").post(createUser);
-userRouter.route('/login').post(loginUser);
-userRouter.route('/updateUserName').post(updateUserName);
+
+// this also need to be public
+userRouter.route('/login').post(validatePasswrod, loginUser);
+
+// This need to be a private or protected route
+userRouter.route('/updateUserName').post(protectRoute, updateUserName);
 
 module.exports = userRouter;
