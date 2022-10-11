@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema({
       message: "password and confirm password doesnot match",
     },
   },
+  resetPasswordToken: String,
+  resetPasswordExpiresIn: Number
 });
 
 userSchema.pre("save", async function (next) {
