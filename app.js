@@ -6,6 +6,7 @@ const morgan = require("morgan");
 const responseTime = require("response-time");
 const rateLimit = require("express-rate-limit");
 const { connectMongoDB } = require('./DB/database');
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
 /* const { MongoClient } = require("mongodb");
 // Replace the uri string with your MongoDB deployment's connection string.
 const uri = process.env.DB_URL.replace(

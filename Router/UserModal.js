@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const userSchema = require("../Schema/userSchema");
-const crypto = require('crypto');
+const crypto = require("crypto");
+const sendEmail = require("../email");
 
 const uri = process.env.DB_URL.replace("<PASSWORD>", process.env.DB_PASSWORD);
 mongoose.connect(uri);
@@ -146,63 +147,92 @@ const updateUserName = async (req, res, next) => {
 };
 
 const sendVerificationMail = async (req, res, next) => {
-    // 1. get mail id from user and check whether that user email is matching with the id 
-    // in the token
-    // if mail id is matching, then send a reset token in the mail ..
-    // if mail is not available --> No user found
-    // if mail is not matching with id, then invalid 
-    // we need to set reset token into db and also need to set expiration time
-    console.log("Calling SendVerification email metod")
+  // 1. get mail id from user and check whether that user email is matching with the id
+  // in the token
+  // if mail id is matching, then send a reset token in the mail ..
+  // if mail is not available --> No user found
+  // if mail is not matching with id, then invalid
+  // we need to set reset token into db and also need to set expiration time
+  console.log("Calling SendVerification email metod");
 
-    const { email } = req.body;
-    // make use of findOne method to get the userdata based on email
-    // for id, we used findById and for other, we need to user findOne method
-    console.log(req.user, email)
+  const { email } = req.body;
+  // make use of findOne method to get the userdata based on email
+  // for id, we used findById and for other, we need to user findOne method
+  console.log(req.user, email);
 
-    // req.user.email is the email id extreacted from jwt token
-    // we need to compare, given mail id matches with extreacted mail id
-    if (req.user.email !== email) {
-        res.status(403).send({
-            message: "Email is invalid"
-        })
-    } else {
-        // Create a reset token -- Random reset roken
-        // save it in db, and then mail this reset token to user
-        const resetToken = crypto.randomBytes(16).toString('hex');
-        const complexToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        req.user.resetPasswordToken = complexToken;
-        req.user.resetPasswordExpiresIn = Date.now() * 60;
-        const updateUser = await UserModal.findByIdAndUpdate(req.user._id, {
-            ...req.user
-        }, {
-            runValidators: false,
-            new: true
-        })
-        console.log(updateUser);
-        // send mail and then send response back
+  // req.user.email is the email id extreacted from jwt token
+  // we need to compare, given mail id matches with extreacted mail id
+  if (req.user.email !== email) {
+    res.status(403).send({
+      message: "Email is invalid",
+    });
+  } else {
+    // Create a reset token -- Random reset roken
+    // save it in db, and then mail this reset token to user
+    const resetToken = crypto.randomBytes(16).toString("hex");
+    const complexToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    req.user.resetPasswordToken = complexToken;
+    req.user.resetPasswordExpiresIn = Date.now() * 60;
+    const updateUser = await UserModal.findByIdAndUpdate(
+      req.user._id,
+      {
+        ...req.user,
+      },
+      {
+        runValidators: false,
+        new: true,
+      }
+    );
+    console.log(updateUser);
+    // send mail and then send response back
 
-        res.send({
+    /* res.send({
             message: "Rest Password mail has been sent",
             resetToken: resetToken,
             data: updateUser
-        })
+        }) */
+
+    // 1. i need to send actual reset token in the mail
+    // 2. i put wrong username or passwrod for mail provider
+    // or mail provider server is not working
+
+    // send email is success, we need to return success response
+    // if send mail is failing, we need to intimate unable to send reset mail
+    // and also we need to remove resetToekn and Expiry time seti n out db
+
+    try {
+      await sendEmail({
+        email: "sensa@gmail.com",
+        subject: "Reset Password",
+        message: `${req.protocol}://${req.get(
+          "host"
+        )}/api/v2/user/resetPwd/${resetToken}`,
+      });
+      res.send({
+        message:
+          "Reset Password Link Send successfully, please provide password and confirm password aling with tne link provided",
+      });
+    } catch (e) {
+      console.log(e)
+      res.status(500).send({
+        message: "Something went wrong, unable to send mail",
+      });
     }
-    
-    // https://mydomain.com/forgotPasswrod/RESET_TOKEN
+  }
 
-    // 2. UI will extract RESET_TOKEN and then sends the NEW_PASSWORD to the setPasswrod
-    // check received token is valid with dababase stored token
+  // https://mydomain.com/forgotPasswrod/RESET_TOKEN
 
-    // 3. if reset token matches and it is not expired, then proceed with updating the user password
-    // send resettoken and save hashed token into db
-    // compare resttokena dn hashedtoken
-    // if comapriosn matches, procedd with updating new passwrod
-    // also we need to check, reset otken expiry time
+  // 2. UI will extract RESET_TOKEN and then sends the NEW_PASSWORD to the setPasswrod
+  // check received token is valid with dababase stored token
 
-
-
-
-
+  // 3. if reset token matches and it is not expired, then proceed with updating the user password
+  // send resettoken and save hashed token into db
+  // compare resttokena dn hashedtoken
+  // if comapriosn matches, procedd with updating new passwrod
+  // also we need to check, reset otken expiry time
 };
 
 // Will public or protected one ?
@@ -218,6 +248,8 @@ userRouter.route("/updateUserName").post(protectRoute, updateUserName);
 // password reset, did it be protectedRoute ?
 // protectRoute can be replace with otp or security question check based on architecture
 // remove the protectRoute and try to get email from req.bodu and then chec in db, whetehr emai lis presnet
-userRouter.route("/resetPassword").post(protectRoute, sendVerificationMail);
+userRouter.route("/forgotPassword").post(protectRoute, sendVerificationMail);
+
+// userRouter.route("/resetPassword").post()
 
 module.exports = userRouter;
