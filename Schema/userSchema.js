@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     },
   },
   resetPasswordToken: String,
-  resetPasswordExpiresIn: Number
+  resetPasswordExpiresIn: Date
 });
 
 userSchema.pre("save", async function (next) {

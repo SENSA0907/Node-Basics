@@ -175,7 +175,7 @@ const sendVerificationMail = async (req, res, next) => {
       .update(resetToken)
       .digest("hex");
     req.user.resetPasswordToken = complexToken;
-    req.user.resetPasswordExpiresIn = Date.now() * 60;
+    req.user.resetPasswordExpiresIn = Date.now() * 10 * 60;
     const updateUser = await UserModal.findByIdAndUpdate(
       req.user._id,
       {
@@ -251,5 +251,18 @@ userRouter.route("/updateUserName").post(protectRoute, updateUserName);
 userRouter.route("/forgotPassword").post(protectRoute, sendVerificationMail);
 
 // userRouter.route("/resetPassword").post()
+
+const somenewmethod = (req, res, next) => {
+  UserModal.findOne({
+    resetPasswordToken: complexToken,
+    resetPasswordExpiresIn: {
+      $gt: Date.now()
+    } // if i hit this method by 10.11, 
+  })
+
+  // the returned is the one who is having active reset password token
+
+  // if user is null, either token is invalid or token is expired
+}
 
 module.exports = userRouter;
