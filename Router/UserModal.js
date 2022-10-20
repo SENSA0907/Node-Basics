@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const userSchema = require("../Schema/userSchema");
 const crypto = require("crypto");
 const sendEmail = require("../email");
+const upload = require('../Schema/upload');
 
 const uri = process.env.DB_URL.replace("<PASSWORD>", process.env.DB_PASSWORD);
 mongoose.connect(uri);
@@ -146,6 +147,24 @@ const updateUserName = async (req, res, next) => {
   }
 };
 
+const uploadImageService = (req, res, next) => {
+  // 1. with the help of multer, get the req.body and req.file
+  console.log(req.body);
+  console.log(req.file);
+
+  // 2. Search for user using email from req.body
+  // if user not found, send error status
+  // if user is present proceed to next step
+
+  // 3. Connect with AWS S3 and try to save the profile pic
+  // use aws-sdk package
+  // if profile image is saved successfully in AWS, it will return me location
+
+  // 4. If image is stored and location is received, update userModel with profilePicLink
+
+  // send user that, profile image is updated successfuly
+}
+
 const sendVerificationMail = async (req, res, next) => {
   // 1. get mail id from user and check whether that user email is matching with the id
   // in the token
@@ -249,6 +268,9 @@ userRouter.route("/updateUserName").post(protectRoute, updateUserName);
 // protectRoute can be replace with otp or security question check based on architecture
 // remove the protectRoute and try to get email from req.bodu and then chec in db, whetehr emai lis presnet
 userRouter.route("/forgotPassword").post(protectRoute, sendVerificationMail);
+
+// file upload route
+userRouter.route('/uploadImage').post(upload.single('image'), uploadImageService)
 
 // userRouter.route("/resetPassword").post()
 
