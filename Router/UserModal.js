@@ -6,6 +6,7 @@ const userSchema = require("../Schema/userSchema");
 const crypto = require("crypto");
 const sendEmail = require("../email");
 const upload = require('../Schema/upload');
+const AWS = require('aws-sdk');
 
 const uri = process.env.DB_URL.replace("<PASSWORD>", process.env.DB_PASSWORD);
 mongoose.connect(uri);
@@ -147,10 +148,25 @@ const updateUserName = async (req, res, next) => {
   }
 };
 
-const uploadImageService = (req, res, next) => {
+const uploadImageService = async (req, res, next) => {
   // 1. with the help of multer, get the req.body and req.file
   console.log(req.body);
   console.log(req.file);
+
+  const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_KEY,
+  })
+
+  const uploadedImage = await s3.upload({
+    Bucket: 'sensa0907sampleimages',
+    Key: `${req.user.id}-${req.file.originalname}`,
+    Body: req.file.buffer,
+  }).promise();
+
+  console.log(uploadedImage.Location);
+
+
 
   // 2. Search for user using email from req.body
   // if user not found, send error status
