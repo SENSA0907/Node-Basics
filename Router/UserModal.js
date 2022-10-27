@@ -6,6 +6,7 @@ const userSchema = require("../Schema/userSchema");
 const crypto = require("crypto");
 const sendEmail = require("../email");
 const upload = require('../Schema/upload');
+// const uploadJson = require('../uploadJson.js')
 const AWS = require('aws-sdk');
 
 const uri = process.env.DB_URL.replace("<PASSWORD>", process.env.DB_PASSWORD);
@@ -160,7 +161,7 @@ const uploadImageService = async (req, res, next) => {
 
   const uploadedImage = await s3.upload({
     Bucket: 'sensa0907sampleimages',
-    Key: `${req.user.id}-${req.file.originalname}`,
+    Key: `2022/11/27/${req.file.originalname}`,
     Body: req.file.buffer,
   }).promise();
 
@@ -287,6 +288,19 @@ userRouter.route("/forgotPassword").post(protectRoute, sendVerificationMail);
 
 // file upload route
 userRouter.route('/uploadImage').post(upload.single('image'), uploadImageService)
+
+const uploadMultipleImage = (req, res, next) => {
+  console.log(req.files)
+}
+
+// userRouter.route('/uploadMultipleImage').post(upload.array('images', 2), uploadMultipleImage)
+
+userRouter.route('/uploadMultipleImage').post(upload.fields([{
+  name: 'images'
+}, {
+  name: 'products',
+  maxCount: 2
+}]), uploadMultipleImage)
 
 // userRouter.route("/resetPassword").post()
 
